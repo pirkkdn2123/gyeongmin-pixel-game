@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>경민 픽셀월드</title>
+<style>
+:root{--ink:#172033;--blue:#2d6cdf;--sky:#c9edff;--panel:#fff;--line:#d8e1ef}
+*{box-sizing:border-box}body{margin:0;background:#eef4fb;color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px max(16px,calc((100vw - 1100px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{font-weight:900;letter-spacing:-.5px}.brand span{color:var(--blue)}.tag{font-size:12px;background:#eaf1ff;color:#2455ad;padding:5px 9px;border-radius:999px}
+main{max-width:1100px;margin:22px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 5px 18px #263b5b0a}
+h1{font-size:clamp(22px,3vw,32px);margin:0 0 8px}h2{font-size:17px;margin:0 0 10px}.muted{color:#66738a;font-size:13px;line-height:1.6}
+canvas{width:100%;display:block;border:3px solid #23314c;border-radius:8px;image-rendering:pixelated;background:#bfeaff;touch-action:none}
+.gamehud{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;margin:10px 0}
+.controls{display:flex;gap:8px;justify-content:center;margin-top:10px}.controls button{width:68px;height:48px;font-size:20px}
+button{font:inherit;font-weight:750;border:0;border-radius:10px;background:#eaf0fa;color:#23314c;padding:10px 13px;cursor:pointer}
+button.primary{background:var(--blue);color:white}button:hover{filter:brightness(.97)}button:focus-visible{outline:3px solid #88b8ff;outline-offset:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tile{border:1px solid var(--line);padding:13px;border-radius:12px;text-align:left;background:#fff}.tile strong{display:block;margin:7px 0 3px}.tile .emoji{font-size:23px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row input{min-width:0;flex:1;border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit}
+.status{padding:10px;border-radius:10px;background:#f2f6fc;font-size:13px;line-height:1.5}
+#miniArea{margin-top:12px}#snakeCanvas{max-width:360px;margin:auto}#mineGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-width:330px;margin:auto}#mineGrid button{padding:0;aspect-ratio:1;border-radius:5px;font-size:14px;background:#e6edf7}#mineGrid button.open{background:#f8fafc;border:1px solid #dce4ef}
+footer{max-width:1100px;margin:0 auto;padding:0 16px 28px;color:#68768c;font-size:12px}
+@media(max-width:760px){main{grid-template-columns:1fr;margin-top:14px}header{padding:12px 16px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<header><div class="brand">경민 <span>PIXEL WORLD</span></div><div class="tag">2D 픽셀 미니게임</div></header>
+<main>
+<section class="panel">
+  <h1>작은 픽셀 세계에 온 걸 환영해!</h1>
+  <p class="muted">학교를 모험하고, 코인을 모으고, 쉬는 시간에는 미니게임을 해봐.</p>
+  <div class="gamehud"><span id="mission">미션: 코인 5개 모으기</span><span>코인 <b id="coins">0</b>/5</span></div>
+  <canvas id="world" width="640" height="360" aria-label="2D 픽셀 플랫폼 게임"></canvas>
+  <div class="controls">
+    <button id="leftBtn" aria-label="왼쪽 이동">◀</button><button id="jumpBtn" class="primary" aria-label="점프">▲ 점프</button><button id="rightBtn" aria-label="오른쪽 이동">▶</button>
+  </div>
+  <p class="muted">PC: ← → 이동 / Space 또는 ↑ 점프 · 모바일: 아래 버튼을 누르세요. 파란 발판 위로 점프하고 코인을 모아봐!</p>
+  <div class="row"><button class="primary" id="restart">게임 다시 시작</button><button id="save">진행 저장</button><span id="saveMsg" class="muted"></span></div>
+</section>
+<aside class="panel">
+  <h2>🎮 미니게임 아케이드</h2>
+  <p class="muted">플랫폼 게임을 하다가 언제든 다른 게임으로 바꿀 수 있어.</p>
+  <div class="grid2">
+    <button class="tile" id="openSnake"><span class="emoji">🐍</span><strong>스네이크</strong><span class="muted">먹이를 먹고 길게!</span></button>
+    <button class="tile" id="openMines"><span class="emoji">💣</span><strong>지뢰찾기</strong><span class="muted">숫자를 보고 추리!</span></button>
+  </div>
+  <div id="miniArea"></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>🔑 NFC 입장 연결 준비</h2>
+  <p class="muted">현재는 웹 게임 시제품이야. 실제 NFC 인증은 학교 허가를 받은 리더기/인증 프로그램과 연결해야 해.</p>
+  <div class="status" id="nfcStatus">상태: 데모 모드 — 누구나 플레이 가능</div>
+  <div class="row" style="margin-top:9px"><button class="primary" id="demoNfc">NFC 인증 데모</button><button id="resetNfc">로그아웃</button></div>
+  <p class="muted">카드 UID만으로 중요한 보안을 맡기지 말고, 실제 서비스에서는 서버 인증을 사용하세요.</p>
+</aside>
+</main>
+<footer>경민 PIXEL WORLD · 브라우저에서 실행되는 프로토타입 · 진행 저장은 이 기기의 브라우저에만 보관됩니다.</footer>
+<script>
+const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=640,H=360;
+let keys={},coins=0,won=false,player,coinList,cam=0;
+const platforms=[
+{x:0,y:320,w:210,h:40},{x:245,y:285,w:115,h:16},{x:400,y:245,w:100,h:16},
+{x:535,y:290,w:150,h:70},{x:720,y:260,w:120,h:16},{x:890,y:220,w:100,h:16},
+{x:1040,y:300,w:200,h:60},{x:1300,y:260,w:120,h:16},{x:1480,y:320,w:300,h:40}
+];
+function reset(){coins=0;won=false;cam=0;player={x:35,y:270,w:18,h:26,vx:0,vy:0,on:false};coinList=[{x:110,y:285},{x:285,y:250},{x:445,y:210},{x:755,y:225},{x:1340,y:225}];document.getElementById('coins').textContent=coins;document.getElementById('mission').textContent='미션: 코인 5개 모으기';draw()}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // pixel sky and clouds
+  rect(0,0,W,H,'#bfeaff');rect(0,265,W,95,'#a8df9a');
+  for(let i=0;i<9;i++){let x=((i*97-cam*.25)%760+760)%760-60;rect(x,48+(i%3)*25,38,10,'#f7fdff');rect(x+9,38+(i%3)*25,22,10,'#f7fdff')}
+  // distant school
+  rect(410-cam*.18,125,150,95,'#e7d9c4');rect(400-cam*.18,115,170,14,'#d0b99c');
+  for(let x=420;x<550;x+=28)for(let y=140;y<195;y+=24)rect(x-cam*.18,y,12,12,'#79bce9');
+  // platforms
+  platforms.forEach(p=>{let x=p.x-cam;if(x+p.w<0||x>W)return;rect(x,p.y,p.w,p.h,'#52617b');rect(x,p.y,p.w,5,'#66b7ff');for(let bx=x+4;bx<x+p.w;bx+=16)rect(bx,p.y+8,2,3,'#7585a0')});
+  coinList.forEach(c=>{if(c.got)return;let x=c.x-cam;rect(x-4,c.y-7,8,14,'#ffcf4a');rect(x-2,c.y-5,4,10,'#fff0a1')});
+  // character pixel art
+  const x=player.x-cam,y=player.y;
+  rect(x+4,y,10,7,'#f0bd91');rect(x+2,y+7,14,10,'#3478ed');rect(x+3,y+17,5,8,'#24385e');rect(x+11,y+17,5,8,'#24385e');rect(x+6,y+2,2,2,'#172033');rect(x+12,y+2,2,2,'#172033');
+  // finish flag
+  rect(1690-cam,260,4,60,'#293a59');rect(1694-cam,260,26,17,'#ff7b79');
+  if(won){rect(145,110,350,95,'#ffffff');ctx.fillStyle='#20304a';ctx.font='bold 23px system-ui';ctx.fillText('미션 성공!',255,150);ctx.font='14px system-ui';ctx.fillText('코인을 모두 모았어!',250,178)}
+}
+function tick(){
+  if(!player)return;
+  player.vx=(keys.left?-2.7:0)+(keys.right?2.7:0);
+  if(keys.jump&&player.on){player.vy=-9.6;player.on=false}
+  player.vy=Math.min(10,player.vy+.42);
+  let oldY=player.y;player.x=Math.max(0,Math.min(1720,player.x+player.vx));player.y+=player.vy;player.on=false;
+  for(const p of platforms){if(player.x+player.w>p.x&&player.x<p.x+p.w&&oldY+player.h<=p.y+4&&player.y+player.h>=p.y&&player.vy>=0){player.y=p.y-player.h;player.vy=0;player.on=true}}
+  if(player.y>430){player.x=Math.max(20,player.x-40);player.y=210;player.vy=0}
+  coinList.forEach(c=>{if(!c.got&&Math.abs(player.x+9-c.x)<17&&Math.abs(player.y+13-c.y)<19){c.got=true;coins++;document.getElementById('coins').textContent=coins;if(coins>=5){won=true;document.getElementById('mission').textContent='미션 완료! 결승 깃발로 가봐'}}});
+  if(player.x>1660&&coins>=5)won=true;
+  cam=Math.max(0,Math.min(1140,player.x-220));draw();requestAnimationFrame(tick)
+}
+function hold(btn,key){const el=document.getElementById(btn);el.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;el.setPointerCapture?.(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>el.addEventListener(ev,()=>keys[key]=false))}
+hold('leftBtn','left');hold('rightBtn','right');hold('jumpBtn','jump');
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','ArrowDown'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;if(e.key==='ArrowRight'||e.key==='d')keys.right=true;if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=true});
+window.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;if(e.key==='ArrowRight'||e.key==='d')keys.right=false;if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=false});
+document.getElementById('restart').onclick=reset;
+document.getElementById('save').onclick=()=>{localStorage.setItem('pixelWorldSave',JSON.stringify({coins,playerX:player.x}));document.getElementById('saveMsg').textContent='저장 완료!';};
+try{const s=JSON.parse(localStorage.getItem('pixelWorldSave')||'null');if(s&&Number.isFinite(s.playerX)){reset();player.x=Math.min(1720,s.playerX);}}catch(e){}
+document.getElementById('demoNfc').onclick=()=>{document.getElementById('nfcStatus').textContent='상태: 데모 인증 성공 — 테스트 플레이어';};
+document.getElementById('resetNfc').onclick=()=>{document.getElementById('nfcStatus').textContent='상태: 데모 모드 — 누구나 플레이 가능';};
+const mini=document.getElementById('miniArea');
+document.getElementById('openSnake').onclick=()=>{
+ mini.innerHTML='<h2 style="margin-top:16px">🐍 스네이크</h2><p class="muted">방향키 또는 아래 버튼으로 움직여.</p><canvas id="snakeCanvas" width="240" height="240"></canvas><div class="controls"><button id="su">▲</button><button id="sl">◀</button><button id="sd">▼</button><button id="sr">▶</button></div><p id="snakeScore" class="muted">점수: 0</p>';
+ const c=document.getElementById('snakeCanvas'),g=c.getContext('2d');let body=[{x:5,y:5},{x:4,y:5},{x:3,y:5}],dir={x:1,y:0},food={x:8,y:7},score=0;
+ function turn(x,y){if(!(dir.x===-x&&dir.y===-y))dir={x,y}}
+ document.getElementById('su').onclick=()=>turn(0,-1);document.getElementById('sd').onclick=()=>turn(0,1);document.getElementById('sl').onclick=()=>turn(-1,0);document.getElementById('sr').onclick=()=>turn(1,0);
+ const key=e=>{if(e.key==='ArrowUp')turn(0,-1);if(e.key==='ArrowDown')turn(0,1);if(e.key==='ArrowLeft')turn(-1,0);if(e.key==='ArrowRight')turn(1,0)};window.addEventListener('keydown',key);
+ function frame(){g.fillStyle='#101b31';g.fillRect(0,0,240,240);let h={x:body[0].x+dir.x,y:body[0].y+dir.y};if(h.x<0||h.x>=12||h.y<0||h.y>=12||body.some(p=>p.x===h.x&&p.y===h.y)){body=[{x:5,y:5},{x:4,y:5},{x:3,y:5}];dir={x:1,y:0};score=0;document.getElementById('snakeScore').textContent='점수: 0'}else{body.unshift(h);if(h.x===food.x&&h.y===food.y){score++;food={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*12)};document.getElementById('snakeScore').textContent='점수: '+score}else body.pop()}
+ g.fillStyle='#ffce57';g.fillRect(food.x*20+3,food.y*20+3,14,14);body.forEach((p,i)=>{g.fillStyle=i?'#6bd7a6':'#b5ffcd';g.fillRect(p.x*20+2,p.y*20+2,16,16)});setTimeout(()=>{if(document.getElementById('snakeCanvas')===c)frame()},150)}
+ frame();
+};
+document.getElementById('openMines').onclick=()=>{
+ mini.innerHTML='<h2 style="margin-top:16px">💣 지뢰찾기</h2><p class="muted">칸을 눌러 열어봐. 지뢰가 아닌 칸에는 주변 지뢰 수가 표시돼.</p><div id="mineGrid"></div><p id="mineMsg" class="muted">지뢰 10개를 피해!</p><button id="mineReset">새 게임</button>';
+ const grid=document.getElementById('mineGrid'),msg=document.getElementById('mineMsg');let mines=[],opened=[];
+ function setup(){grid.innerHTML='';mines=Array(64).fill(false);opened=Array(64).fill(false);let n=0;while(n<10){let i=Math.floor(Math.random()*64);if(!mines[i]){mines[i]=true;n++}}for(let i=0;i<64;i++){let b=document.createElement('button');b.textContent='';b.onclick=()=>open(i,b);grid.appendChild(b)}msg.textContent='지뢰 10개를 피해!'}
+ function open(i,b){if(opened[i])return;opened[i]=true;b.classList.add('open');if(mines[i]){b.textContent='💣';msg.textContent='앗, 지뢰! 새 게임을 눌러 다시 도전해.';grid.querySelectorAll('button').forEach((el,j)=>{if(mines[j])el.textContent='💣';el.disabled=true});return}let x=i%8,y=Math.floor(i/8),count=0;for(let yy=Math.max(0,y-1);yy<=Math.min(7,y+1);yy++)for(let xx=Math.max(0,x-1);xx<=Math.min(7,x+1);xx++)if(mines[yy*8+xx])count++;b.textContent=count||'·';b.style.color=['#555','#2870d8','#248a52','#d04444','#7d46bd'][Math.min(count,4)];if(opened.filter((v,j)=>v&&!mines[j]).length===54)msg.textContent='성공! 지뢰를 모두 피했어.'}
+ document.getElementById('mineReset').onclick=setup;setup();
+};
+reset();requestAnimationFrame(tick);
+</script>
+</body>
+</html>
